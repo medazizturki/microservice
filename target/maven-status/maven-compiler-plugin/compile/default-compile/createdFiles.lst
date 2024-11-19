@@ -1,0 +1,12 @@
+com\esprit\gestiontournoi\Config\JwtConverter.class
+com\esprit\gestiontournoi\ITournoiService.class
+com\esprit\gestiontournoi\Tournoi.class
+com\esprit\gestiontournoi\Config\SecurityConfig.class
+com\esprit\gestiontournoi\TournoiRepository.class
+com\esprit\gestiontournoi\GestionTournoiApplication.class
+com\esprit\gestiontournoi\TournoiRestAPI.class
+com\esprit\gestiontournoi\Terrain.class
+com\esprit\gestiontournoi\global\GlobalExceptionHandler.class
+com\esprit\gestiontournoi\TerrainClient.class
+com\esprit\gestiontournoi\TournoiService.class
+com\esprit\gestiontournoi\FeignConfig.class
