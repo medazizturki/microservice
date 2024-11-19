@@ -1,0 +1,185 @@
+
+services:
+
+    
+  eureka-server:
+    build: .\Eureka17
+    image: azizturki/eureka17
+    container_name: eureka17
+    ports:
+      - "8761:8761"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+
+  api-gateway:
+    build: .\APIGateway
+    image: azizturki/apigateway
+    container_name: apigateway
+    ports:
+      - "8090:8090"
+    depends_on:
+      - eureka-server
+      - tournoi
+      - sportyspace
+      - terrain
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+
+  terrain:
+    build: .\Terrain
+    image: azizturki/terrain
+    container_name: terrain
+    ports:
+      - "8089:8089"
+    depends_on:
+      - eureka-server
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+
+  tournoi:
+    build: .\GestionTournoi
+    image: azizturki/gestiontournoi
+    container_name: gestiontournoi
+    ports:
+      - "8080:8080"
+    depends_on:
+      - eureka-server
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+
+
+  sportyspace:
+    build: .\projet_web_SAE5-mey\SportySpace
+    image: azizturki/sportyspace
+    container_name: sportyspace
+    ports:
+      - "8082:8082"
+    depends_on:
+      - eureka-server
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+  
+  recrutement:
+    build: .\projet_web_SAE5-sondesfouzai
+    image: azizturki/recrutement
+    container_name: recrutement
+    ports:
+      - "8086:8086"
+    depends_on:
+      - eureka-server
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql:5432/dbprojetweb
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=admin
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT=org.hibernate.dialect.PostgreSQLDialect  
+
+
+  ## postgre 2
+  postgresql:
+    image: postgres:15.5-alpine3.19
+    container_name: postgresql_container
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: dbprojetweb
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0.0
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HTTP_ENABLED: true
+      KC_HTTP_PORT: 9999
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB: postgres
+      KC_DB_VENDOR: POSTGRES
+      KC_DB_DATABASE: keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: password
+      KC_DB_ADDR: postgres
+    depends_on:
+      - postgres
+    ports:
+      - "9999:9999"
+    command: [ "start-dev" ]
+
+  postgres:
+    image: postgres:15.5-alpine3.19
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  reservation:
+    container_name: reservation
+    image: azizturki/reservation
+    build: ./projet_web_SAE5-hazem
+    ports:
+      - "8085:8085"
+    depends_on:
+      - eureka-server
+      - mysqldb_forum
+    environment:
+      MYSQL_HOST: mysqldb_forum
+      MYSQL_PORT: 3306
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysqldb_forum:3306/Reservation?createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+
+  mysqldb_forum:
+    image: mysql:8.0.13
+    container_name: mysqldb_forum
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: Reservation
+    ports:
+      - "3306:3306"
+
+  # MySQL database for Node.js
+  mysqldb_node:
+    image: mysql:8.0.13
+    container_name: mysqldb_node
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: node_user_service
+    ports:
+      - "3307:3306"  
+    volumes:
+      - mysql_node_data:/var/lib/mysql
+
+ # Node.js service
+  node-user-service:
+    build: ./node-mysql-registration-login-api-master  
+    image: node-user-service
+    container_name: node-user-service
+    ports:
+      - "4000:4000"  
+    depends_on:
+      - mysqldb_node  
+      - eureka-server
+    environment:
+      - DB_HOST=mysqldb_node  
+      - DB_PORT=3306
+      - DB_USER=root 
+      - DB_PASSWORD=root  
+      - DB_NAME=node-mysql-registration-login-api  
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+
+volumes:
+  postgres_data:
+  pg_data:
+  mysql_node_data:
